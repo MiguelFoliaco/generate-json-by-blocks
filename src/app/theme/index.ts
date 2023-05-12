@@ -1,3 +1,5 @@
+import { createTheme } from "@mui/material";
+
 export const theme: ITheme = {
   pallete: {
     primary: {
@@ -12,6 +14,7 @@ export const theme: ITheme = {
       main: "rgba(240,20,150)",
       textConstrast: "#ffffff",
     },
+
   },
   text: {
     link: {
@@ -25,7 +28,16 @@ export const theme: ITheme = {
     },
   },
 };
-
+export const themeUI = createTheme({
+  palette: {
+    mode: 'dark',
+    ...theme.pallete,
+    background: {
+      default: '#1e1e1e',
+      paper: "#111111"
+    }
+  },
+});
 type IColorsTypes = "primary" | "secondary";
 type TypesPropertiesColors = {
   main: string;
