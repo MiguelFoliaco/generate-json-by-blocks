@@ -17,15 +17,38 @@
     display: grid;
     grid-template-columns: repeat(12, 1fr);
     grid-template-rows: repeat(12, 1fr);
+    overflow: hidden;
 }
 
 .named-blueprint {
     display: inline;
     position: absolute;
-    right: 5px;
-    top:5px;
+    right: 0px;
+    left: 0px;
+    top: 5px;
+    max-width: 50px;
+    margin: auto;
     color: #1e1e1e;
     font-size: 10px;
+    z-index: 102;
+}
+
+.value-blueprint-children {
+    // position: absolute;
+    // right: 0px;
+    // //left: 0px;
+    // top: 20px;
+    // // bottom: 0px;
+    width: 80%;
+    display: block;
+    background-color: #4c91f7;
+    height: min-content;
+    margin: 0px auto;
+    color: #3b3b3b;
+    padding-left: 20px;
+    font-weight: bold;
+    font-size: 10px;
+    z-index: 100;
 }
 
 .block-select-form {
@@ -46,6 +69,7 @@
     border: 1px solid rgb(160, 160, 160);
 }
 
+
 .block-list {
     width: 300px;
     height: 500px;
@@ -54,4 +78,52 @@
     border-radius: 3px;
     margin: 30px;
     box-shadow: 2px 2px 6px #111111;
+}
+
+.latencia {
+    background-color: rgba(1, 1, 1, 0);
+    animation: latencia 3s infinite;
+    animation-delay: 6s;
+}
+
+.tool-box {
+    width: 300px;
+    height: 450px;
+    position: fixed;
+    top: 20vh;
+    left: 50px;
+    z-index: 2000;
+}
+
+.input-custom {
+    input {
+        padding: 5px 5px 5px 8px;
+    }
+}
+
+.title-span {
+    font-weight: bold;
+    font-size: 18px;
+}
+
+.minimize {
+    position: fixed;
+    top: inherit;
+    bottom: 0px;
+    left: 10px;
+    height: min-content;
+}
+
+@keyframes latencia {
+    0% {
+        background-color: rgba(1, 1, 1, 0.2);
+    }
+
+    50% {
+        background-color: rgba(1, 1, 1, 0);
+    }
+
+    100% {
+        background-color: rgba(1, 1, 1, 0.2);
+    }
 }

@@ -1,14 +1,19 @@
-import { DragEvent } from 'react';
+import { DragEvent, useEffect } from 'react';
 import { Box, Checkbox, FormControl } from "@mui/material"
 import { useGlobal } from "../../hooks"
 import { useState } from "react";
 import { ID } from "../../utils";
 import { IBlueprints } from "../Structures/structure";
-import { IBlockDefinition } from '../blockList/blocksList';
+import { Tool } from '../Tool/Tool';
+import { useManageElement } from '../../utils/setItemInBluePrint';
+
+const dataTransfer = new DataTransfer();
 
 export const BlockContainer = () => {
 
-    const { values: { selectedStructure, } } = useGlobal();
+    const { values: { selectedStructure, blockSelected, targetSelected }, actions: { setTargetSelected, setBlockSelected } } = useGlobal();
+    const { getElement, setElement } = useManageElement();
+    const [id, setId] = useState('');
     const [checked, setChecked] = useState(true);
     const [named, setNamed] = useState(false);
 
@@ -16,20 +21,20 @@ export const BlockContainer = () => {
         evt.preventDefault();
     }
     const onDrop = (evt: DragEvent<HTMLDivElement>) => {
-        const itemID = evt.dataTransfer.getData('blockName');
-        console.log(evt.dataTransfer.items)
+        const itemID = dataTransfer.getData('blockName');
         console.log(itemID)
     }
 
     const startDrag = (event: DragEvent<HTMLDivElement>) => {
-        event.dataTransfer.setData('blockName', "Hola");
+        dataTransfer.setData("blockName", "name");
     }
+    useEffect(() => {
+        setTargetSelected(undefined);
+        setBlockSelected(undefined);
+    }, [id, selectedStructure]);
 
     return (
         <>
-            <div onDrag={startDrag} draggable>
-                j
-            </div>
             <Box sx={{ display: 'flex', alignItems: 'center', position: 'absolute', width: '200px', top: 10, margin: 'auto', left: 0, right: 0, backgroundColor: '#111111', padding: 0.5, borderRadius: 1 }}>
                 <div style={{ display: 'flex', alignItems: 'center', fontSize: 12 }}>
 
@@ -51,52 +56,106 @@ export const BlockContainer = () => {
                     </FormControl>
                 </div>
             </Box>
+            <Tool />
             <div className='block-container'>
                 {
-                    selectedStructure.blueprints.map(blueprints => (
-                        <div
-                            onDragOver={draggingOver}
-                            onDrop={onDrop}
-                            className={`${checked ? "item-grid" : undefined} ${blueprints?.children !== undefined && 'children-container'} `} key={ID(12)} style={{
-                                gridColumnStart: (blueprints.x[0] + 1),
-                                gridColumnEnd: (blueprints.x[1] + 1),
-                                gridRowStart: (blueprints.y[0] + 1),
-                                gridRowEnd: (blueprints.y[1] + 1),
-                                position: 'relative'
-                            }}>
-                            {
-                                named && <span className='named-blueprint'>{blueprints.id}</span>
-                            }
-                            {
-                                blueprints?.children !== undefined ?
-                                    generateContainerChildren(blueprints.children, checked, onDrop, named)
-                                    : null
-                            }
-                        </div>
-                    ))
+                    selectedStructure.blueprints.map(blueprints => {
+                        const element = getElement(blueprints.id)
+                        return (
+                            <div
+                                onClick={() => {
+                                    if (targetSelected === undefined) {
+                                        alert('Debe seleccionar un elemento');
+                                        setId(blueprints.id)
+                                        return
+                                    }
+                                    setId(blueprints.id);
+                                    setElement(blueprints.id, targetSelected)
+                                }}
+                                onDragOver={draggingOver}
+                                onDrop={onDrop}
+                                className={`${checked ? "item-grid" : undefined} ${blueprints?.children !== undefined && 'children-container'} ${blockSelected !== undefined && 'latencia'} `} key={ID(12)} style={{
+                                    gridColumnStart: (blueprints.x[0] + 1),
+                                    gridColumnEnd: (blueprints.x[1] + 1),
+                                    gridRowStart: (blueprints.y[0] + 1),
+                                    gridRowEnd: (blueprints.y[1] + 1),
+                                    position: 'relative'
+                                }}>
+                                {
+                                    named && <span className='named-blueprint'>{blueprints.id}</span>
+                                }
+                                {
+                                    element.map(el => (
+                                        <span className='value-blueprint-children' style={{ backgroundColor: (typeof el !== 'string') ? el?.colorTag : undefined }} key={ID(15)}>
+                                            {(typeof el !== 'string') && `${el.name} -  ${el.target}`}
+                                        </span>
+                                    ))
+                                }
+                                {
+                                    blueprints?.children !== undefined ?
+                                        <GenerateContainerChildren blueprint={blueprints.children} checked={checked} named={named} onDrop={onDrop} />
+                                        //generateContainerChildren(blueprints.children, checked, onDrop, named)
+                                        : null
+                                }
+                            </div>
+                        )
+                    }
+                    )
                 }
-            </div>
+            </div >
         </>
     )
 }
 
-const generateContainerChildren = (blueprint: IBlueprints[], checked: boolean, onDrop: (evt: DragEvent<HTMLDivElement>) => void, named: boolean) => {
+type props = {
+    blueprint: IBlueprints[], checked: boolean, onDrop: (evt: DragEvent<HTMLDivElement>) => void, named: boolean
+}
+
+const GenerateContainerChildren = ({ blueprint, checked, named, onDrop }: props) => {
+    const { values: { blockSelected, targetSelected, selectedStructure }, actions: { setTargetSelected, setBlockSelected } } = useGlobal();
+    const [id, setId] = useState('');
+    const { getElement, setElement } = useManageElement();
+    useEffect(() => {
+        setTargetSelected(undefined);
+        setBlockSelected(undefined);
+    }, [id, selectedStructure]);
     return <>
-        {blueprint.map(print => (
-            <div className={checked ? "item-grid" : undefined} key={ID(12)}
-                onDrop={onDrop}
-                style={{
-                    gridColumnStart: (print.x[0] + 1),
-                    gridColumnEnd: (print.x[1] + 1),
-                    gridRowStart: (print.y[0] + 1),
-                    gridRowEnd: (print.y[1] + 1),
-                    position: 'relative'
-                }}>
-                {named && <span className='named-blueprint'>{print.id}</span>}
-                {
-                    print?.children !== undefined ? generateContainerChildren(blueprint, checked, onDrop, named) : null
-                }
-            </div >
-        ))}
+        {blueprint.map(print => {
+            const element = getElement(print.id);
+            return (
+                <div
+                    onClick={(e) => {
+                        if (targetSelected === undefined) {
+                            alert('Debe seleccionar un elemento');
+                            e.stopPropagation();
+                            return
+                        }
+                        setElement(print.id, targetSelected)
+                        setId(print.id)
+                        e.stopPropagation();
+                    }}
+                    className={`${checked ? "item-grid" : undefined} ${blockSelected !== undefined && 'latencia'}`} key={ID(12)}
+                    onDrop={onDrop}
+                    style={{
+                        gridColumnStart: (print.x[0] + 1),
+                        gridColumnEnd: (print.x[1] + 1),
+                        gridRowStart: (print.y[0] + 1),
+                        gridRowEnd: (print.y[1] + 1),
+                        position: 'relative',
+                    }}>
+                    {named && <span className='named-blueprint'>{print.id}</span>}
+                    {
+                        element.map(el => (
+                            <span key={ID(10)} className=' value-blueprint-children' style={{ backgroundColor: (typeof el !== 'string') ? el?.colorTag : undefined }}>
+                                {(typeof el !== 'string') && `${el.name} -  ${el.target}`}
+                            </span>
+                        ))
+                    }
+                    {
+                        print?.children !== undefined ? <GenerateContainerChildren blueprint={print.children} checked={checked} named={named} onDrop={onDrop} /> : null
+                    }
+                </div >
+            )
+        })}
     </>
 }
