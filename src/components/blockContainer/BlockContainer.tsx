@@ -21,17 +21,19 @@ export const BlockContainer = () => {
         evt.preventDefault();
     }
     const onDrop = (evt: DragEvent<HTMLDivElement>) => {
-        const itemID = dataTransfer.getData('blockName');
+        const itemID = dataTransfer.getData('blockId');
         console.log(itemID)
     }
 
-    const startDrag = (event: DragEvent<HTMLDivElement>) => {
-        dataTransfer.setData("blockName", "name");
+    const startDrag = (nameComponent: string, idBluePrint: string) => {
+        dataTransfer.setData("blockId", `${nameComponent}:${idBluePrint}`);
     }
     useEffect(() => {
-        setTargetSelected(undefined);
-        setBlockSelected(undefined);
-    }, [id, selectedStructure]);
+        if (id !== '') {
+            setTargetSelected(undefined);
+            setBlockSelected(undefined);
+        }
+    }, [id]);
 
     return (
         <>
@@ -86,9 +88,14 @@ export const BlockContainer = () => {
                                 }
                                 {
                                     element.map(el => (
-                                        <span className='value-blueprint-children' style={{ backgroundColor: (typeof el !== 'string') ? el?.colorTag : undefined }} key={ID(15)}>
-                                            {(typeof el !== 'string') && `${el.name} -  ${el.target}`}
-                                        </span>
+                                        el !== undefined && (
+                                            <span className='value-blueprint-children' style={{ backgroundColor: (typeof el !== 'string') ? el?.colorTag : undefined }} key={ID(15)}
+                                                onDrag={() => startDrag(`${(typeof el !== 'string') ? el.name || '' : el}`, blueprints.id)}
+                                                draggable
+                                            >
+                                                {(typeof el !== 'string') && `${el.name} -  ${el.target}`}
+                                            </span>
+                                        )
                                     ))
                                 }
                                 {
@@ -116,9 +123,11 @@ const GenerateContainerChildren = ({ blueprint, checked, named, onDrop }: props)
     const [id, setId] = useState('');
     const { getElement, setElement } = useManageElement();
     useEffect(() => {
-        setTargetSelected(undefined);
-        setBlockSelected(undefined);
-    }, [id, selectedStructure]);
+        if (id !== '') {
+            setTargetSelected(undefined);
+            setBlockSelected(undefined);
+        }
+    }, [id]);
     return <>
         {blueprint.map(print => {
             const element = getElement(print.id);
