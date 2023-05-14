@@ -40,6 +40,10 @@ export const blockList: IBlockDefinition[] = [
     generateBlockDefinition({ name: 'Text', tag: 'p' }),
     generateBlockDefinition({ name: 'Title 1', tag: 'h1' }),
     generateBlockDefinition({ name: 'Title 2', tag: 'h2' }),
+    generateBlockDefinition({ name: 'Title 3', tag: 'h3' }),
+    generateBlockDefinition({ name: 'Title 4', tag: 'h4' }),
+    generateBlockDefinition({ name: 'Title 5', tag: 'h5' }),
+    generateBlockDefinition({ name: 'Title 6', tag: 'h6' }),
     generateBlockDefinition({ name: 'Imagen', tag: 'img', typeValue: 'url' }),
     generateBlockDefinition({ name: 'Link', tag: 'link', typeValue: 'text' }),
 

@@ -34,12 +34,12 @@ export const structures: IStructure[] = [
             {
                 id: 'left-main',
                 x: [0, 5],
-                y: [1, 4]
+                y: [1, 12]
             },
             {
                 id: 'right-main',
                 x: [5, 12],
-                y: [1, 4]
+                y: [1, 12]
             }
         ],
     },

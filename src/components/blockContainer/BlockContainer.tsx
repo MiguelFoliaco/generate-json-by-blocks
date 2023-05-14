@@ -2,38 +2,76 @@ import { DragEvent, useEffect } from 'react';
 import { Box, Checkbox, FormControl } from "@mui/material"
 import { useGlobal } from "../../hooks"
 import { useState } from "react";
-import { ID } from "../../utils";
+import { ID, local, useSearchBlock } from "../../utils";
 import { IBlueprints } from "../Structures/structure";
 import { Tool } from '../Tool/Tool';
-import { useManageElement } from '../../utils/setItemInBluePrint';
+import { getFnElement, useManageElement } from '../../utils/setItemInBluePrint';
+import { stringPathNewObject } from '../../utils/formatObject';
 
 const dataTransfer = new DataTransfer();
 
 export const BlockContainer = () => {
 
-    const { values: { selectedStructure, blockSelected, targetSelected }, actions: { setTargetSelected, setBlockSelected } } = useGlobal();
+    const { values: { selectedStructure, blockSelected, targetSelected }, actions: { setTargetSelected, setBlockSelected, } } = useGlobal();
     const { getElement, setElement } = useManageElement();
-    const [id, setId] = useState('');
+    const [count, setCount] = useState(0);
     const [checked, setChecked] = useState(true);
     const [named, setNamed] = useState(false);
+    const searchBlock = useSearchBlock()
 
     const draggingOver = (evt: DragEvent<HTMLDivElement>) => {
         evt.preventDefault();
     }
-    const onDrop = (evt: DragEvent<HTMLDivElement>) => {
+    const onDrop = (evt: DragEvent<HTMLDivElement>, newBluePrint: string) => {
         const itemID = dataTransfer.getData('blockId');
-        console.log(itemID)
+        const nameTag = itemID.replaceAll(':', '#').split('#');
+        const { bluePrint, path } = searchBlock(itemID);
+        console.log("container", bluePrint)
+        let tags = getElement(`${bluePrint.id}`);
+        const indexTag = tags.findIndex(e => {
+            if (typeof e !== 'string') {
+                if (e.name === nameTag[0] && e.target === nameTag[1]) {
+                    return true;
+                }
+                return false;
+            }
+            return false;
+        })
+        if (indexTag === -1) {
+            console.log(path)
+            console.log('Error en drop', indexTag)
+            console.log('Error en drop', bluePrint.id)
+            console.log('Error en drop', tags)
+            evt.stopPropagation();
+            return evt.preventDefault();
+        }
+
+        const copyTagDel = tags[indexTag];
+        //@ts-ignore
+        tags[indexTag] = [];
+        const newTagDeleted = tags.flat(99999);
+        console.log(tags)
+        setElement(`${bluePrint.id}`, newTagDeleted)
+        setElement(`${newBluePrint}`, copyTagDel);
+        setCount(count + 1);
+        // const newBluePrint = stringPathNewObject<any>({
+        //     newValue: [],
+        //     path: path,
+        //     oldObject: selectedStructure.blueprints
+        // });
+        // console.log("old Element", selectedStructure);
+        // console.log("New Element", Object.values(newBluePrint).flat(999999999));
     }
 
-    const startDrag = (nameComponent: string, idBluePrint: string) => {
-        dataTransfer.setData("blockId", `${nameComponent}:${idBluePrint}`);
+    const startDrag = (nameComponent: string, idBluePrint: string, evet: DragEvent<HTMLSpanElement>) => {
+        dataTransfer.setData("blockId", `${nameComponent}:${idBluePrint}`)
     }
     useEffect(() => {
-        if (id !== '') {
+        if (count !== 0) {
             setTargetSelected(undefined);
             setBlockSelected(undefined);
         }
-    }, [id]);
+    }, [count]);
 
     return (
         <>
@@ -61,21 +99,22 @@ export const BlockContainer = () => {
             <Tool />
             <div className='block-container'>
                 {
-                    selectedStructure.blueprints.map(blueprints => {
+                    selectedStructure.blueprints.map((blueprints, index) => {
                         const element = getElement(blueprints.id)
+                        local.setItem(`path-${selectedStructure.name}:${blueprints.id}`, `blueprints[${index}]`)
                         return (
                             <div
                                 onClick={() => {
                                     if (targetSelected === undefined) {
                                         alert('Debe seleccionar un elemento');
-                                        setId(blueprints.id)
+                                        setCount(count + 1)
                                         return
                                     }
-                                    setId(blueprints.id);
+                                    setCount(count + 1);
                                     setElement(blueprints.id, targetSelected)
                                 }}
                                 onDragOver={draggingOver}
-                                onDrop={onDrop}
+                                onDrop={(event) => onDrop(event, blueprints.id)}
                                 className={`${checked ? "item-grid" : undefined} ${blueprints?.children !== undefined && 'children-container'} ${blockSelected !== undefined && 'latencia'} `} key={ID(12)} style={{
                                     gridColumnStart: (blueprints.x[0] + 1),
                                     gridColumnEnd: (blueprints.x[1] + 1),
@@ -89,8 +128,11 @@ export const BlockContainer = () => {
                                 {
                                     element.map(el => (
                                         el !== undefined && (
-                                            <span className='value-blueprint-children' style={{ backgroundColor: (typeof el !== 'string') ? el?.colorTag : undefined }} key={ID(15)}
-                                                onDrag={() => startDrag(`${(typeof el !== 'string') ? el.name || '' : el}`, blueprints.id)}
+                                            <span
+                                                className='value-blueprint-children'
+                                                style={{ backgroundColor: (typeof el !== 'string') ? el?.colorTag : undefined }}
+                                                key={ID(15)}
+                                                onDrag={(evet) => startDrag(`${(typeof el !== 'string') ? `${el.name}#${el.target}` || '' : el}`, blueprints.id, evet)}
                                                 draggable
                                             >
                                                 {(typeof el !== 'string') && `${el.name} -  ${el.target}`}
@@ -100,7 +142,7 @@ export const BlockContainer = () => {
                                 }
                                 {
                                     blueprints?.children !== undefined ?
-                                        <GenerateContainerChildren blueprint={blueprints.children} checked={checked} named={named} onDrop={onDrop} />
+                                        <GenerateContainerChildren blueprint={blueprints.children} checked={checked} named={named} onDrop={onDrop} startDrag={startDrag} pathParent={blueprints.id} />
                                         //generateContainerChildren(blueprints.children, checked, onDrop, named)
                                         : null
                                 }
@@ -115,22 +157,29 @@ export const BlockContainer = () => {
 }
 
 type props = {
-    blueprint: IBlueprints[], checked: boolean, onDrop: (evt: DragEvent<HTMLDivElement>) => void, named: boolean
+    blueprint: IBlueprints[];
+    checked: boolean;
+    onDrop: (evt: DragEvent<HTMLDivElement>, newBlueprintId: string) => void;
+    startDrag: (nameComponent: string, idBluePrint: string, evet: DragEvent<HTMLSpanElement>) => void;
+    named: boolean;
+    pathParent: string;
 }
 
-const GenerateContainerChildren = ({ blueprint, checked, named, onDrop }: props) => {
+const GenerateContainerChildren = ({ blueprint, checked, named, onDrop, startDrag, pathParent }: props) => {
     const { values: { blockSelected, targetSelected, selectedStructure }, actions: { setTargetSelected, setBlockSelected } } = useGlobal();
-    const [id, setId] = useState('');
+    const [count, setCount] = useState(0);
     const { getElement, setElement } = useManageElement();
+    const path = (childNamed: string) => `${pathParent}>${childNamed}`
     useEffect(() => {
-        if (id !== '') {
+        if (count !== 0) {
             setTargetSelected(undefined);
             setBlockSelected(undefined);
         }
-    }, [id]);
+    }, [count]);
     return <>
-        {blueprint.map(print => {
+        {blueprint.map((print, index) => {
             const element = getElement(print.id);
+            local.setItem(`path-${selectedStructure.name}:${print.id}`, `${local.getItem(`path-${selectedStructure.name}:${pathParent}`)}.children[${index}]`)
             return (
                 <div
                     onClick={(e) => {
@@ -140,11 +189,11 @@ const GenerateContainerChildren = ({ blueprint, checked, named, onDrop }: props)
                             return
                         }
                         setElement(print.id, targetSelected)
-                        setId(print.id)
+                        setCount(count + 1)
                         e.stopPropagation();
                     }}
                     className={`${checked ? "item-grid" : undefined} ${blockSelected !== undefined && 'latencia'}`} key={ID(12)}
-                    onDrop={onDrop}
+                    onDrop={(event) => onDrop(event, print.id)}
                     style={{
                         gridColumnStart: (print.x[0] + 1),
                         gridColumnEnd: (print.x[1] + 1),
@@ -155,13 +204,19 @@ const GenerateContainerChildren = ({ blueprint, checked, named, onDrop }: props)
                     {named && <span className='named-blueprint'>{print.id}</span>}
                     {
                         element.map(el => (
-                            <span key={ID(10)} className=' value-blueprint-children' style={{ backgroundColor: (typeof el !== 'string') ? el?.colorTag : undefined }}>
+                            <span
+                                key={ID(10)}
+                                className=' value-blueprint-children'
+                                draggable
+                                onDrag={(event) => startDrag(`${(typeof el !== 'string') ? `${el.name}#${el.target}` || '' : el}`, print.id, event)}
+                                style={{ backgroundColor: (typeof el !== 'string') ? el?.colorTag : undefined }}
+                            >
                                 {(typeof el !== 'string') && `${el.name} -  ${el.target}`}
                             </span>
                         ))
                     }
                     {
-                        print?.children !== undefined ? <GenerateContainerChildren blueprint={print.children} checked={checked} named={named} onDrop={onDrop} /> : null
+                        print?.children !== undefined ? <GenerateContainerChildren blueprint={print.children} checked={checked} named={named} onDrop={onDrop} startDrag={startDrag} pathParent={print.id} /> : null
                     }
                 </div >
             )

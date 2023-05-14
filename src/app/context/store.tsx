@@ -14,9 +14,11 @@ export const useAppStore = (): IAppContext => {
   const [selectedStructure, setSelectStructure] = useState(Structure[0])
   const [json, setJson] = useState(jsonFake);
   const [targetSelected, setTargetSelected] = useState<undefined | IElementAttributes>();
-  
+  const [minizeModalForm, setMinizeModalForm] = useState(false);
+
   return {
     values: {
+      minizeModalForm,
       theme,
       blockList,
       blockSelected,
@@ -26,6 +28,7 @@ export const useAppStore = (): IAppContext => {
       targetSelected
     },
     actions: {
+      setMinizeModalForm,
       setTheme,
       setBlockList,
       setBlockSelected,
@@ -39,6 +42,7 @@ export const useAppStore = (): IAppContext => {
 
 export interface IAppContext {
   values: {
+    minizeModalForm: boolean;
     theme: ITheme;
     blockList: IBlockDefinition[];
     blockSelected: IBlockDefinition | undefined;
@@ -48,6 +52,7 @@ export interface IAppContext {
     targetSelected: IElementAttributes & { colorTag?: string } | undefined;
   };
   actions: {
+    setMinizeModalForm: Dispatch<SetStateAction<boolean>>;
     setTheme: Dispatch<SetStateAction<ITheme>>;
     setBlockList: Dispatch<SetStateAction<IBlockDefinition[]>>;
     setBlockSelected: Dispatch<SetStateAction<IBlockDefinition | undefined>>;
